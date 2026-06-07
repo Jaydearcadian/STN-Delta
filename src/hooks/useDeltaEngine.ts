@@ -271,6 +271,14 @@ export function useDeltaEngine(
 
     const init = async () => {
       setState('HYDRATING');
+      setMetrics({
+        requiredInputUsdc: '0.00',
+        residualGas: '0.00',
+        gasSponsorDeduction: '0.00',
+        quoteId: '',
+        slippageBps: 0,
+        routeHops: []
+      });
       await new Promise(r => setTimeout(r, 400));
 
       const mnemonic = await mnemonicNew(24);
