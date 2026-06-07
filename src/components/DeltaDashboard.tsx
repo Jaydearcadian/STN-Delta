@@ -21,8 +21,7 @@ export const DeltaDashboard = ({ invoice, affiliateData }: Props) => {
   const [sourceNetwork, setSourceNetwork] = useState('Base (USDC)');
   const [userBufferStr, setUserBufferStr] = useState(invoice ? (parseFloat(invoice.amount) * 1.1).toFixed(2) : '55.00');
   const userBuffer = parseFloat(userBufferStr) || 0;
-  const [isMainnet, setIsMainnet] = useState(true);
-  const engine = useDeltaEngine(invoice, affiliateData, evmAddress, sourceNetwork, userBuffer, isMainnet);
+  const engine = useDeltaEngine(invoice, affiliateData, evmAddress, sourceNetwork, userBuffer);
   const [copiedAddr, setCopiedAddr] = useState(false);
 
   const activeInvoice = affiliateData ?? invoice;
@@ -48,26 +47,6 @@ export const DeltaDashboard = ({ invoice, affiliateData }: Props) => {
 
   return (
     <div style={{ width: '100%', maxWidth: 480, margin: '0 auto' }}>
-      {/* ─── ENVIRONMENT TOGGLE ──────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: !isMainnet ? 'var(--warning)' : 'var(--text-muted)' }}>SANDBOX</span>
-          <div style={{ 
-            width: '32px', height: '18px', borderRadius: '9px', position: 'relative', 
-            border: '1px solid var(--border)', backgroundColor: isMainnet ? 'var(--accent)' : 'var(--bg-secondary)',
-            transition: 'background-color 0.2s'
-          }}>
-            <div style={{ 
-              position: 'absolute', top: '1px', left: isMainnet ? '15px' : '1px', 
-              width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#fff', 
-              transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' 
-            }} />
-          </div>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: isMainnet ? 'var(--accent)' : 'var(--text-muted)' }}>MAINNET</span>
-          <input type="checkbox" checked={isMainnet} onChange={(e) => setIsMainnet(e.target.checked)} style={{ display: 'none' }} />
-        </label>
-      </div>
-
       {/* ─── CARD ─────────────────────────────────────────────────────────── */}
       <div className="card card-cyan-glow" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 

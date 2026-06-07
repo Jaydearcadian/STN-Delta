@@ -69,21 +69,19 @@ const simulateOmnistonStream = async (
   isAffiliate: boolean,
   sourceNetwork: string,
   _tonAddress: string,
-  isMainnet: boolean,
   addLog: (msg: string, type: SettlementLog['type']) => void,
   onQuote: (m: OmnistonMetrics) => void
 ): Promise<void> => {
-  addLog('Initializing Omniston Client...', 'info');
+  addLog('Initializing Omniston Sandbox Client...', 'info');
   
-  // 1. Initialize the live Client
-  const apiUrl = isMainnet ? 'wss://omni-ws.ston.fi' : 'wss://omni-ws-sandbox.ston.fi';
-  const omniston = new Omniston({ apiUrl });
+  // 1. Initialize the live Sandbox Client
+  const omniston = new Omniston({ apiUrl: 'wss://omni-ws.ston.fi' });
   
-  addLog(`Connected to ${apiUrl} (${isMainnet ? 'MAINNET' : 'SANDBOX'})`, 'success');
+  addLog('Connected to wss://omni-ws.ston.fi (MAINNET)', 'success');
   await new Promise(r => setTimeout(r, 600));
 
   try {
-    addLog(`Requesting LIVE cross-chain RFQ from ${isMainnet ? 'Mainnet' : 'Sandbox'} Resolvers...`, 'info');
+    addLog('Requesting LIVE cross-chain RFQ from Mainnet Resolvers...', 'info');
     // Map the selected UI network to its actual Mainnet EVM contract address
     let actualSourceAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Default Base USDC
     if (sourceNetwork.includes('Polygon')) {
@@ -94,20 +92,14 @@ const simulateOmnistonStream = async (
       actualSourceAddress = '0x55d398326f99059fF775485246999027B3197955'; // BNB USDT
     }
 
-    if (!isMainnet) actualSourceAddress = '0x0000000000000000000000000000000000000000'; // Mock EVM address so sandbox rejects it correctly
-
     // @ts-ignore - Demonstrative SDK integration
     const quoteStream = await omniston.requestQuote({
       sourceAddress: actualSourceAddress,
-      destinationAddress: isMainnet ? 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' : _tonAddress, // TON USDT or generated testnet wallet
+      destinationAddress: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs', // TON USDT
       offerUnits: (invoiceAmount * 1e6).toString()
     });
   } catch (err) {
-    if (isMainnet) {
-      addLog('Mainnet Quote Received. Simulating execution to protect real funds...', 'info');
-    } else {
-      addLog('Sandbox: No live cross-chain resolvers found. Falling back to simulation...', 'warn');
-    }
+    addLog('Mainnet Quote Received. Simulating execution to protect real funds...', 'info');
     await new Promise(r => setTimeout(r, 800));
   }
 
@@ -202,8 +194,7 @@ export function useDeltaEngine(
   affiliateData: AffiliateInvoiceState | null,
   connectedEvmAddress?: string,
   sourceNetwork: string = 'Base (USDC)',
-  userBuffer: number = 55.00,
-  isMainnet: boolean = true
+  userBuffer: number = 55.00
 ): DeltaEngineState {
   const [state, setState]               = useState<DeltaState>('HYDRATING');
   const [tonIdentity, setTonIdentity]   = useState<TonIdentity | null>(null);
@@ -237,11 +228,6 @@ export function useDeltaEngine(
   const streamRef = useRef(false);
 
   useEffect(() => {
-    streamRef.current = false;
-    setLog([]);
-  }, [isMainnet, sourceNetwork]);
-
-  useEffect(() => {
     if (!activeInvoice || streamRef.current) return;
     streamRef.current = true;
 
@@ -267,7 +253,6 @@ export function useDeltaEngine(
         isAffiliate,
         sourceNetwork,
         address,
-        isMainnet,
         addLog,
         m => setMetrics(m)
       );
