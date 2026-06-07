@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { mnemonicNew, mnemonicToPrivateKey } from '@ton/crypto';
 import { WalletContractV4 } from '@ton/ton';
-import { useSendTransaction } from 'wagmi';
+import { useSendTransaction, useSignTypedData } from 'wagmi';
 import { parseEther } from 'viem';
 import { Omniston } from '@ston-fi/omniston-sdk';
 import type { InvoiceState, AffiliateInvoiceState } from '../utils/codec';
@@ -194,7 +194,8 @@ export function useDeltaEngine(
   affiliateData: AffiliateInvoiceState | null,
   connectedEvmAddress?: string,
   sourceNetwork: string = 'Base (USDC)',
-  userBuffer: number = 55.00
+  userBuffer: number = 55.00,
+  isSimulation: boolean = true
 ): DeltaEngineState {
   const [state, setState]               = useState<DeltaState>('HYDRATING');
   const [tonIdentity, setTonIdentity]   = useState<TonIdentity | null>(null);
@@ -212,6 +213,7 @@ export function useDeltaEngine(
   const [error, setError] = useState<string | null>(null);
 
   const { sendTransactionAsync } = useSendTransaction();
+  const { signTypedDataAsync } = useSignTypedData();
 
   const addLog = useCallback((msg: string, type: SettlementLog['type'] = 'info') => {
     setLog(prev => [...prev, { ts: Date.now(), msg, type }]);
@@ -287,11 +289,42 @@ export function useDeltaEngine(
 
     let txHash: string | undefined;
     try {
-      txHash = await sendTransactionAsync({
-        to: '0x000000000000000000000000000000000000dEaD', // Burn/vault address for the demo
-        value: parseEther('0.0001'),
-      });
-      addLog(`Real EVM transaction submitted: ${txHash.slice(0,10)}…`, 'success');
+      if (isSimulation) {
+        txHash = await sendTransactionAsync({
+          to: '0x000000000000000000000000000000000000dEaD', // Burn/vault address for the demo
+          value: parseEther('0.0001'),
+        });
+        addLog(`Real EVM transaction submitted: ${txHash.slice(0,10)}…`, 'success');
+      } else {
+        addLog('Attempting Live STON.fi payload construction...', 'info');
+        const omniston = new Omniston({ apiUrl: 'wss://omni-ws.ston.fi' });
+        
+        // This attempts the real SDK EVM execution path.
+        // It will likely throw if the ABI/quote object is not fully synchronized from the stream
+        const payloadRes = await omniston.evmBuildOrderPayload({
+           quoteId: metrics.quoteId,
+           ownerSrcAddress: { address: connectedEvmAddress || '' },
+           destinationAddress: { address: tonIdentity?.address || '' }
+        });
+
+        addLog('Please sign the TypedData in MetaMask...', 'info');
+        const typedData = JSON.parse(payloadRes.typedData);
+        const signature = await signTypedDataAsync({
+          domain: typedData.domain,
+          types: typedData.types,
+          primaryType: typedData.primaryType,
+          message: typedData.message
+        });
+
+        addLog('Registering Signed Order with Omniston...', 'info');
+        // @ts-ignore
+        await omniston.registerSignedOrder({
+           quoteId: metrics.quoteId,
+           ownerSrcAddress: { address: connectedEvmAddress || '' },
+           signedOrder: { value: signature } 
+        });
+        addLog('Order successfully registered with STON.fi resolvers!', 'success');
+      }
     } catch (err: any) {
       setError(err.message ?? 'Wallet transaction rejected');
       setState('ROUTE_STREAM');
