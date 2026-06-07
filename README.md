@@ -13,6 +13,7 @@ Precision Finance is a B2B payment gateway that allows EVM users to pay corporat
 * **Frontend:** React, Vite, TypeScript
 * **TON Ecosystem:** STON.fi Omniston SDK, TON Connect UI
 * **EVM Ecosystem:** Wagmi, Viem, RainbowKit
+* **AI Tools Used:** Gemini, Claude
 
 ### 💡 How it Works
 1. **Invoice Creation:** Merchants generate a payment link on TON requesting a specific amount of USD₮.
