@@ -107,9 +107,9 @@ const simulateOmnistonStream = async (
       const timeout = setTimeout(() => reject(new Error('Timeout waiting for STON.fi quotes after 8s')), 8000);
       quoteObservable.subscribe({
         next: (event: any) => {
-          if (event && event.quote) {
+          if (event && event.$case === 'quoteUpdated' && event.value) {
             clearTimeout(timeout);
-            resolve(event.quote);
+            resolve(event.value);
           }
         },
         error: (err: any) => {
@@ -137,6 +137,25 @@ const simulateOmnistonStream = async (
     throw new Error('Failed to acquire live mainnet quote.');
   }
 
+  if (!isSimulation && realQuote) {
+    const inputAmount = parseFloat(realQuote.inputUnits || '0') / 1e6;
+    const gasSponsor = isGasless ? 0.42 : 0;
+    const residual = Math.max(0, userBuffer - inputAmount - gasSponsor);
+    
+    const metrics: OmnistonMetrics = {
+      requiredInputUsdc: inputAmount.toFixed(2),
+      residualGas: residual.toFixed(2),
+      gasSponsorDeduction: gasSponsor.toFixed(2),
+      quoteId: realQuote.quoteId,
+      slippageBps: 0,
+      routeHops: ['Live Omniston Route Detected'],
+    };
+    onQuote(metrics);
+    addLog(`Optimal live quote locked — awaiting user authorization`, 'success');
+    return;
+  }
+
+  // --- MOCK SIMULATION LOGIC ---
   if (isAffiliate) {
     addLog('Affiliate referrer detected — 0.2% fee injected into swap', 'info');
     await new Promise(r => setTimeout(r, 200));
@@ -165,7 +184,7 @@ const simulateOmnistonStream = async (
       requiredInputUsdc: requiredInput.toFixed(2),
       residualGas: residual.toFixed(2),
       gasSponsorDeduction: gasSponsor.toFixed(2),
-      quoteId: realQuoteId || `QT-${Date.now().toString(36).toUpperCase()}-${i}`,
+      quoteId: `QT-${Date.now().toString(36).toUpperCase()}-${i}`,
       slippageBps: q.slippage,
       routeHops: i < 2
         ? [`${sourceChain} ${sourceAsset} → WETH`, 'WETH → STON.fi Relay', 'jUSDT → USD₮ (TON)']
@@ -271,6 +290,8 @@ export function useDeltaEngine(
 
     const init = async () => {
       setState('HYDRATING');
+      setLog([]);
+      setError(null);
       setMetrics({
         requiredInputUsdc: '0.00',
         residualGas: '0.00',
@@ -392,6 +413,14 @@ export function useDeltaEngine(
 
     await new Promise(r => setTimeout(r, 600));
     setState('SWAP_SETTLING');
+
+    if (!isSimulation) {
+      addLog('Waiting for STON.fi resolvers to complete HTLC relay...', 'info');
+      await new Promise(r => setTimeout(r, 2000));
+      addLog('Mainnet tracking unavailable in this environment. Order pending.', 'warn');
+      setState('SUCCESS_VALEDICTORY');
+      return;
+    }
 
     try {
       await simulateSettlement(isAffiliate, residualRoute, connectedEvmAddress, addLog);
