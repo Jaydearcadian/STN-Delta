@@ -68,7 +68,7 @@ const simulateOmnistonStream = async (
   isGasless: boolean,
   isAffiliate: boolean,
   sourceNetwork: string,
-  tonAddress: string,
+  _tonAddress: string,
   addLog: (msg: string, type: SettlementLog['type']) => void,
   onQuote: (m: OmnistonMetrics) => void
 ): Promise<void> => {
