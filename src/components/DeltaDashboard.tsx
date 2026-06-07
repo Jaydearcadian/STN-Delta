@@ -63,7 +63,7 @@ export const DeltaDashboard = ({ invoice, affiliateData }: Props) => {
               transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' 
             }} />
           </div>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: !isSimulation ? 'var(--accent)' : 'var(--text-muted)' }}>LIVE SANDBOX</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: !isSimulation ? 'var(--accent)' : 'var(--text-muted)' }}>LIVE MAINNET</span>
           <input type="checkbox" checked={!isSimulation} onChange={(e) => setIsSimulation(!e.target.checked)} style={{ display: 'none' }} />
         </label>
       </div>

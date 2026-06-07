@@ -67,10 +67,11 @@ export const EVM_CONFIG = {
 // ─── STON.fi / Omniston ───────────────────────────────────────────────────────
 
 export const OMNISTON_CONFIG = {
-  sandbox: {
-    wsUrl: 'wss://omni-ws-sandbox.ston.fi',
+  testnet: {
+    wsUrl: 'wss://omni-ws.ston.fi', // Omniston testnet (same endpoint, uses testnet assets)
     restUrl: 'https://api.ston.fi/v1',
     referrerFeeBps: 20,
+    // Testnet router: https://docs.ston.fi/developer-section/testnet
     routerAddress: 'EQBsGx9ArADUrREB34W-ghgsCgBShvfUr4Jvlu-0KGc33a1n',
   },
   mainnet: {
@@ -112,7 +113,7 @@ export const WALLETCONNECT_PROJECT_ID =
 
 export const activeTon    = TON_CONFIG[ACTIVE_ENV];
 export const activeEvm    = EVM_CONFIG[ACTIVE_ENV];
-export const activeOmni   = isTestnet ? OMNISTON_CONFIG.sandbox : OMNISTON_CONFIG.mainnet;
+export const activeOmni   = OMNISTON_CONFIG[ACTIVE_ENV];
 export const activeBridge = BRIDGE_CONFIG[ACTIVE_ENV];
 
 export const isTestnet = ACTIVE_ENV === 'testnet';
