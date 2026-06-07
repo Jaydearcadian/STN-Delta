@@ -183,14 +183,12 @@ const simulateSettlement = async (
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
-
-const DEFAULT_USER_BUFFER = 55.00;
-
 export function useDeltaEngine(
   invoice: InvoiceState | null,
   affiliateData: AffiliateInvoiceState | null,
   connectedEvmAddress?: string,
-  sourceNetwork: string = 'Base (USDC)'
+  sourceNetwork: string = 'Base (USDC)',
+  userBuffer: number = 55.00
 ): DeltaEngineState {
   const [state, setState]               = useState<DeltaState>('HYDRATING');
   const [tonIdentity, setTonIdentity]   = useState<TonIdentity | null>(null);
@@ -221,7 +219,6 @@ export function useDeltaEngine(
     : '0.0000';
 
   const invoiceAmount = activeInvoice ? parseFloat(activeInvoice.amount) : 50.00;
-  const userBuffer = DEFAULT_USER_BUFFER;
   const streamRef = useRef(false);
 
   useEffect(() => {
@@ -262,7 +259,7 @@ export function useDeltaEngine(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInvoice]);
 
-  // Re-calc residual when gasless toggled
+  // Re-calc residual when gasless or userBuffer toggled
   useEffect(() => {
     if (state !== 'ROUTE_STREAM' && state !== 'HYDRATING') return;
     if (!activeInvoice) return;
@@ -275,7 +272,7 @@ export function useDeltaEngine(
       residualGas: residual.toFixed(2),
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGasless]);
+  }, [isGasless, userBuffer]);
 
   const executePayment = async () => {
     if (state !== 'ROUTE_STREAM') return;

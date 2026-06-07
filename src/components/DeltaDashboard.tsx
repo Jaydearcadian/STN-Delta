@@ -15,12 +15,13 @@ type Props = {
   affiliateData: AffiliateInvoiceState | null;
 };
 
-const USER_BUFFER = 55.00;
 
 export const DeltaDashboard = ({ invoice, affiliateData }: Props) => {
   const { address: evmAddress } = useAccount();
   const [sourceNetwork, setSourceNetwork] = useState('Base (USDC)');
-  const engine = useDeltaEngine(invoice, affiliateData, evmAddress, sourceNetwork);
+  const [userBufferStr, setUserBufferStr] = useState(invoice ? (parseFloat(invoice.amount) * 1.1).toFixed(2) : '55.00');
+  const userBuffer = parseFloat(userBufferStr) || 0;
+  const engine = useDeltaEngine(invoice, affiliateData, evmAddress, sourceNetwork, userBuffer);
   const [copiedAddr, setCopiedAddr] = useState(false);
 
   const activeInvoice = affiliateData ?? invoice;
@@ -121,8 +122,27 @@ export const DeltaDashboard = ({ invoice, affiliateData }: Props) => {
               <div className="metric-row" style={{ alignItems: 'center' }}>
                 <span className="metric-label">You send</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="metric-value" style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
-                    ${USER_BUFFER.toFixed(2)}
+                  <span className="metric-value" style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center' }}>
+                    $
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={userBufferStr}
+                      onChange={(e) => setUserBufferStr(e.target.value)}
+                      className="input-field"
+                      style={{
+                        width: '70px',
+                        padding: '2px 4px',
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: '1px dashed var(--border)',
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        textAlign: 'left'
+                      }}
+                    />
                   </span>
                   <select
                     value={sourceNetwork}
