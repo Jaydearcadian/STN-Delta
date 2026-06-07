@@ -35,8 +35,75 @@ type SentPayment = {
   txHash: string;
   gasless: boolean;
 };
-const RECEIVED: ReceivedPayment[] = [];
-const SENT: SentPayment[] = [];
+const RECEIVED: ReceivedPayment[] = [
+  {
+    id: 'INV-4A9B-X1',
+    from: '0x83...D291',
+    amount: '125.00',
+    asset: 'USDT',
+    residualSeeded: '4.82',
+    tonWallet: 'EQCx...DiiX',
+    timestamp: '10m ago',
+    status: 'SETTLED',
+    txHash: 'e63b...9f2a',
+    isAffiliate: true,
+    affiliateEarned: '0.25',
+  },
+  {
+    id: 'INV-7Z2C-Y8',
+    from: '0xc0...2dfb',
+    amount: '50.00',
+    asset: 'USDT',
+    residualSeeded: '0.00',
+    tonWallet: '—',
+    timestamp: '2h ago',
+    status: 'SETTLED',
+    txHash: '8a1c...b44d',
+    isAffiliate: false,
+  },
+  {
+    id: 'INV-1B3D-Z9',
+    from: '0x55...7955',
+    amount: '850.00',
+    asset: 'USDT',
+    residualSeeded: '12.45',
+    tonWallet: 'EQD4...aB1c',
+    timestamp: 'Yesterday',
+    status: 'SETTLED',
+    txHash: 'c9d1...f3e2',
+    isAffiliate: true,
+    affiliateEarned: '1.70',
+  }
+];
+
+const SENT: SentPayment[] = [
+  {
+    id: 'INV-9K4M-L2',
+    merchant: '0x71...C32A',
+    amount: '45.00',
+    asset: 'Base USDC',
+    youSent: '49.50',
+    residualCaptured: '3.82',
+    tonWallet: 'EQCx...DiiX',
+    timestamp: '1h ago',
+    status: 'SETTLED',
+    txHash: 'd2e4...a1b2',
+    gasless: true,
+  },
+  {
+    id: 'INV-2X5N-P7',
+    merchant: '0x99...F1B4',
+    amount: '200.00',
+    asset: 'Polygon pUSD',
+    youSent: '210.00',
+    residualCaptured: '8.40',
+    tonWallet: 'EQA1...B2C3',
+    timestamp: '3d ago',
+    status: 'SETTLED',
+    txHash: 'f4b1...e9d2',
+    gasless: false,
+  }
+];
 
 // ─── KPI cards ────────────────────────────────────────────────────────────────
 
