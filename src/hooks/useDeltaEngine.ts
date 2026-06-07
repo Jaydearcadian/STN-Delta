@@ -80,6 +80,7 @@ const simulateOmnistonStream = async (
   addLog('Connected to wss://omni-ws.ston.fi (MAINNET)', 'success');
   await new Promise(r => setTimeout(r, 600));
 
+  let realQuoteId = '';
   try {
     addLog('Requesting LIVE cross-chain RFQ from Mainnet Resolvers...', 'info');
     // Map the selected UI network to its actual Mainnet EVM contract address
@@ -92,14 +93,34 @@ const simulateOmnistonStream = async (
       actualSourceAddress = '0x55d398326f99059fF775485246999027B3197955'; // BNB USDT
     }
 
-    // @ts-ignore - Demonstrative SDK integration
-    const quoteStream = await omniston.requestQuote({
+    // Request the real quote observable
+    const quoteObservable = omniston.requestForQuote({
       sourceAddress: actualSourceAddress,
       destinationAddress: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs', // TON USDT
       offerUnits: (invoiceAmount * 1e6).toString()
+    } as any);
+
+    // Extract the first quote ID
+    const realQuote = await new Promise<any>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Timeout waiting for STON.fi quotes')), 3000);
+      quoteObservable.subscribe({
+        next: (event: any) => {
+          if (event && event.quote) {
+            clearTimeout(timeout);
+            resolve(event.quote);
+          }
+        },
+        error: (err: any) => {
+          clearTimeout(timeout);
+          reject(err);
+        }
+      });
     });
+
+    realQuoteId = realQuote.quoteId;
+    addLog(`Live Mainnet Quote Captured: ${realQuoteId}`, 'success');
   } catch (err) {
-    addLog('Mainnet Quote Received. Simulating execution to protect real funds...', 'info');
+    addLog('Quote stream timeout. Simulating execution fallback...', 'info');
     await new Promise(r => setTimeout(r, 800));
   }
 
@@ -131,7 +152,7 @@ const simulateOmnistonStream = async (
       requiredInputUsdc: requiredInput.toFixed(2),
       residualGas: residual.toFixed(2),
       gasSponsorDeduction: gasSponsor.toFixed(2),
-      quoteId: `QT-${Date.now().toString(36).toUpperCase()}-${i}`,
+      quoteId: realQuoteId || `QT-${Date.now().toString(36).toUpperCase()}-${i}`,
       slippageBps: q.slippage,
       routeHops: i < 2
         ? [`${sourceChain} ${sourceAsset} → WETH`, 'WETH → STON.fi Relay', 'jUSDT → USD₮ (TON)']
@@ -303,9 +324,9 @@ export function useDeltaEngine(
         // It will likely throw if the ABI/quote object is not fully synchronized from the stream
         const payloadRes = await omniston.evmBuildOrderPayload({
            quoteId: metrics.quoteId,
-           ownerSrcAddress: { address: connectedEvmAddress || '' },
-           destinationAddress: { address: tonIdentity?.address || '' }
-        });
+           ownerSrcAddress: connectedEvmAddress || '',
+           destinationAddress: tonIdentity?.address || ''
+        } as any);
 
         addLog('Please sign the TypedData in MetaMask...', 'info');
         const typedData = JSON.parse(payloadRes.typedData);
