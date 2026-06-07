@@ -93,11 +93,12 @@ const simulateOmnistonStream = async (
       actualSourceAddress = '0x55d398326f99059fF775485246999027B3197955'; // BNB USDT
     }
 
-    // Request the real quote observable using exact Protobuf-compliant nested schema
+    // Request the real quote observable using exact v1beta8 schema
     const quoteObservable = omniston.requestForQuote({
-      inputAsset: { chain: { $case: 'base', value: { address: actualSourceAddress } } },
-      outputAsset: { chain: { $case: 'ton', value: { address: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' } } },
-      amount: { $case: 'inputUnits', value: (invoiceAmount * 1e6).toString() }
+      inputAsset: { chain: { $case: 'base', value: { kind: { $case: 'erc20', value: { address: actualSourceAddress } } } } },
+      outputAsset: { chain: { $case: 'ton', value: { kind: { $case: 'jetton', value: { address: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' } } } } },
+      amount: { $case: 'inputUnits', value: (invoiceAmount * 1e6).toString() },
+      settlementParams: [{ params: { $case: 'order', value: {} } }]
     } as any);
 
     // Extract the first quote ID
@@ -328,7 +329,7 @@ export function useDeltaEngine(
           const payloadRes = await omniston.evmBuildOrderPayload({
              quoteId: metrics.quoteId,
              ownerSrcAddress: { chain: { $case: 'base', value: connectedEvmAddress || '' } },
-             destinationAddress: { chain: { $case: 'ton', value: tonIdentity?.address || '' } }
+             traderDstAddress: { chain: { $case: 'ton', value: tonIdentity?.address || '' } }
           } as any);
 
           addLog('Please sign the TypedData in MetaMask...', 'info');
