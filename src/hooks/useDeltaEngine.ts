@@ -260,11 +260,13 @@ export function useDeltaEngine(
     : '0.0000';
 
   const invoiceAmount = activeInvoice ? parseFloat(activeInvoice.amount) : 50.00;
-  const streamRef = useRef(false);
+  // Keep track of parameters to prevent infinite loops, but re-run when toggles change
+  const currentReq = `${activeInvoice?.id}-${isSimulation}-${sourceNetwork}`;
+  const streamRef = useRef('');
 
   useEffect(() => {
-    if (!activeInvoice || streamRef.current) return;
-    streamRef.current = true;
+    if (!activeInvoice || streamRef.current === currentReq) return;
+    streamRef.current = currentReq;
 
     const init = async () => {
       setState('HYDRATING');
@@ -299,7 +301,7 @@ export function useDeltaEngine(
       setState('ROUTE_STREAM');
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeInvoice]);
+  }, [activeInvoice, isSimulation, sourceNetwork]);
 
   // Re-calc residual when gasless or userBuffer toggled
   useEffect(() => {
