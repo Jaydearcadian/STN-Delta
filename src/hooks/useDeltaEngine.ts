@@ -96,9 +96,9 @@ const simulateOmnistonStream = async (
 
     // Request the real quote observable using exact v1beta8 schema
     const quoteObservable = omniston.requestForQuote({
-      inputAsset: { chain: { $case: 'base', value: { kind: { $case: 'erc20', value: { address: actualSourceAddress } } } } },
-      outputAsset: { chain: { $case: 'ton', value: { kind: { $case: 'jetton', value: { address: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' } } } } },
-      amount: { $case: 'inputUnits', value: (invoiceAmount * 1e6).toString() },
+      inputAsset: { chain: { $case: 'base', value: { kind: { $case: 'erc20', value: actualSourceAddress } } } },
+      outputAsset: { chain: { $case: 'ton', value: { kind: { $case: 'jetton', value: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' } } } },
+      amount: { $case: 'inputUnits', value: (invoiceAmount * 1e6).toFixed(0) },
       settlementParams: [{ params: { $case: 'order', value: {} } }]
     } as any);
 
@@ -124,8 +124,9 @@ const simulateOmnistonStream = async (
     addLog(`Live Mainnet Quote Captured: ${realQuoteId}`, 'success');
   } catch (err: any) {
     if (!isSimulation) {
-      addLog(`Mainnet quote fetch failed: ${err.message || 'No liquidity available on resolvers'}`, 'warn');
-      throw new Error(`Live execution failed: ${err.message || 'No liquidity available on resolvers'}`);
+      const errDetails = err.details || JSON.stringify(err);
+      addLog(`Mainnet quote fetch failed: ${err.message}. Details: ${errDetails}`, 'warn');
+      throw new Error(`Live execution failed: ${err.message}. Details: ${errDetails}`);
     }
     console.error("Mainnet Quote Fetch Failed:", err);
     addLog('Quote stream timeout or error. Simulating execution fallback...', 'info');
