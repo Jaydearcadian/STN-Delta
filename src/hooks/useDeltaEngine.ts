@@ -70,7 +70,8 @@ const simulateOmnistonStream = async (
   sourceNetwork: string,
   _tonAddress: string,
   addLog: (msg: string, type: SettlementLog['type']) => void,
-  onQuote: (m: OmnistonMetrics) => void
+  onQuote: (m: OmnistonMetrics) => void,
+  isSimulation: boolean
 ): Promise<void> => {
   addLog('Initializing Omniston Sandbox Client...', 'info');
   
@@ -122,9 +123,17 @@ const simulateOmnistonStream = async (
     realQuoteId = realQuote.quoteId;
     addLog(`Live Mainnet Quote Captured: ${realQuoteId}`, 'success');
   } catch (err: any) {
+    if (!isSimulation) {
+      addLog(`Mainnet quote fetch failed: ${err.message || 'No liquidity available on resolvers'}`, 'warn');
+      throw new Error(`Live execution failed: ${err.message || 'No liquidity available on resolvers'}`);
+    }
     console.error("Mainnet Quote Fetch Failed:", err);
     addLog('Quote stream timeout or error. Simulating execution fallback...', 'info');
     await new Promise(r => setTimeout(r, 800));
+  }
+
+  if (!isSimulation && !realQuoteId) {
+    throw new Error('Failed to acquire live mainnet quote.');
   }
 
   if (isAffiliate) {
@@ -280,7 +289,8 @@ export function useDeltaEngine(
         sourceNetwork,
         address,
         addLog,
-        m => setMetrics(m)
+        m => setMetrics(m),
+        isSimulation
       );
     };
 
@@ -341,43 +351,18 @@ export function useDeltaEngine(
             message: typedData.message
           });
         } catch (apiErr: any) {
-          console.warn("STON.fi API payload failed (likely due to sandbox routing/liquidity). Falling back to local EIP-712 STON.fi payload generation for demo...");
-          // If STON.fi API fails to build payload (because of fake quoteId or routing errors),
-          // we dynamically generate the exact STON.fi EIP-712 Permit2 payload so the user's wallet still pops up!
-          signature = await signTypedDataAsync({
-            domain: { name: 'Omniston Protocol', version: '1', chainId: 8453, verifyingContract: '0x000000000022D473030F116dDEE9F6B43aC78BA3' },
-            types: {
-              CrossChainOrder: [
-                { name: 'settlementRouter', type: 'address' },
-                { name: 'sourceAsset', type: 'address' },
-                { name: 'amount', type: 'uint256' },
-                { name: 'destinationAddress', type: 'string' },
-                { name: 'nonce', type: 'uint256' }
-              ]
-            },
-            primaryType: 'CrossChainOrder',
-            message: {
-              settlementRouter: '0x1111111254EEB25477B68fb85Ed929f73A960582',
-              sourceAsset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-              amount: BigInt((invoiceAmount * 1e6).toFixed(0)),
-              destinationAddress: tonIdentity?.address || 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs',
-              nonce: BigInt(Date.now())
-            }
-          });
+          console.error("Omniston evmBuildOrderPayload failed:", apiErr);
+          const errMsg = apiErr.message || 'API rejected payload construction';
+          addLog(`Mainnet payload construction failed: ${errMsg}`, 'warn');
+          throw new Error(`STON.fi API Error: ${errMsg}`);
         }
 
         addLog('Registering Signed Order with Omniston...', 'info');
-        try {
-          // @ts-ignore
-          await omniston.registerSignedOrder({
-             quoteId: metrics.quoteId,
-             ownerSrcAddress: { chain: { $case: 'base', value: connectedEvmAddress || '' } },
-             signedOrder: { value: signature } 
-          } as any);
-        } catch (registerErr) {
-          // We expect this to fail if we used the local payload fallback, but the UI flow continues!
-          console.log("Mock registration bypassed");
-        }
+        await omniston.registerSignedOrder({
+           quoteId: metrics.quoteId,
+           ownerSrcAddress: { chain: { $case: 'base', value: connectedEvmAddress || '' } },
+           signedOrder: { value: signature } 
+        } as any);
         addLog('Order successfully registered with STON.fi resolvers!', 'success');
       }
     } catch (err: any) {
