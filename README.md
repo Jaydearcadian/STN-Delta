@@ -1,9 +1,9 @@
-# Precision Finance ⚡
+# STN-Delta ⚡
 
 **One-liner:** The cross-chain payment gateway that captures every dollar.
 
 **Short Description:** 
-Precision Finance is a B2B payment gateway that allows EVM users to pay corporate invoices using stablecoins on their native chain (e.g. Base USDC) while merchants instantly receive yield-bearing USD₮ on TON. Built entirely on top of STON.fi's Omniston protocol for zero-slippage atomic settlement without the user ever touching a centralized bridge.
+STN-Delta is a B2B payment gateway that allows EVM users to pay corporate invoices using stablecoins on their native chain (e.g. Base USDC) while merchants instantly receive yield-bearing USD₮ on TON. Built entirely on top of STON.fi's Omniston protocol for zero-slippage atomic settlement without the user ever touching a centralized bridge.
 
 **Live Product URL:** https://stndelta.vercel.app
 **Loom Demo:** [Add your Loom URL here]
