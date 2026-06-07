@@ -93,11 +93,11 @@ const simulateOmnistonStream = async (
       actualSourceAddress = '0x55d398326f99059fF775485246999027B3197955'; // BNB USDT
     }
 
-    // Request the real quote observable
+    // Request the real quote observable using exact Protobuf-compliant nested schema
     const quoteObservable = omniston.requestForQuote({
-      sourceAddress: actualSourceAddress,
-      destinationAddress: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs', // TON USDT
-      offerUnits: (invoiceAmount * 1e6).toString()
+      inputAsset: { chain: { $case: 'base', value: { address: actualSourceAddress } } },
+      outputAsset: { chain: { $case: 'ton', value: { address: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' } } },
+      amount: { $case: 'inputUnits', value: (invoiceAmount * 1e6).toString() }
     } as any);
 
     // Extract the first quote ID
@@ -324,8 +324,8 @@ export function useDeltaEngine(
         // It will likely throw if the ABI/quote object is not fully synchronized from the stream
         const payloadRes = await omniston.evmBuildOrderPayload({
            quoteId: metrics.quoteId,
-           ownerSrcAddress: connectedEvmAddress || '',
-           destinationAddress: tonIdentity?.address || ''
+           ownerSrcAddress: { chain: { $case: 'base', value: connectedEvmAddress || '' } },
+           destinationAddress: { chain: { $case: 'ton', value: tonIdentity?.address || '' } }
         } as any);
 
         addLog('Please sign the TypedData in MetaMask...', 'info');
@@ -347,7 +347,9 @@ export function useDeltaEngine(
         addLog('Order successfully registered with STON.fi resolvers!', 'success');
       }
     } catch (err: any) {
-      setError(err.message ?? 'Wallet transaction rejected');
+      console.error("Live Execution Error:", err);
+      const errMsg = err?.message || err?.toString() || 'Wallet transaction rejected';
+      setError(`Execution Failed: ${errMsg}`);
       setState('ROUTE_STREAM');
       return;
     }
