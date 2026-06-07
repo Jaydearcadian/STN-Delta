@@ -1,73 +1,29 @@
-# React + TypeScript + Vite
+# Precision Finance ⚡
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**One-liner:** The cross-chain payment gateway that captures every dollar.
 
-Currently, two official plugins are available:
+**Short Description:** 
+Precision Finance is a B2B payment gateway that allows EVM users to pay corporate invoices using stablecoins on their native chain (e.g. Base USDC) while merchants instantly receive yield-bearing USD₮ on TON. Built entirely on top of STON.fi's Omniston protocol for zero-slippage atomic settlement without the user ever touching a centralized bridge.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Live Product URL:** https://stndelta.vercel.app
+**Loom Demo:** [Add your Loom URL here]
+**GitHub Repo:** [Add your GitHub URL here]
 
-## React Compiler
+### 🛠 Tech Stack & Integrations
+* **Frontend:** React, Vite, TypeScript
+* **TON Ecosystem:** STON.fi Omniston SDK, TON Connect UI
+* **EVM Ecosystem:** Wagmi, Viem, RainbowKit
+* **AI Tools Used:** DeepMind Antigravity AI (Agentic Coding)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 💡 How it Works
+1. **Invoice Creation:** Merchants generate a payment link on TON requesting a specific amount of USD₮.
+2. **EVM Funding:** The customer clicks the link and connects their EVM wallet (e.g. MetaMask on Base).
+3. **Omniston Routing:** The app uses the `@ston-fi/omniston-sdk` to fetch real-time RFQ routes across the Omniston network.
+4. **Atomic Swap:** The user executes the transaction via an HTLC. STON.fi Resolvers detect the EVM lock and release the required USD₮ directly into the merchant's TON wallet.
+5. **Residual Yield:** Any leftover slippage buffer is automatically routed back to the user or used to sponsor gasless TON onboarding.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 🏃‍♂️ Running Locally
+```bash
+npm install
+npm run dev
 ```
