@@ -288,6 +288,12 @@ export function useDeltaEngine(
     if (!activeInvoice || streamRef.current === currentReq) return;
     streamRef.current = currentReq;
 
+    let isCancelled = false;
+
+    const safeAddLog = (msg: string, type: SettlementLog['type'] = 'info') => {
+      if (!isCancelled) addLog(msg, type);
+    };
+
     const init = async () => {
       setState('HYDRATING');
       setLog([]);
@@ -306,11 +312,14 @@ export function useDeltaEngine(
       const keyPair = await mnemonicToPrivateKey(mnemonic);
       const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey });
       const address = wallet.address.toString({ bounceable: false });
+      
+      if (isCancelled) return;
       setTonIdentity({ address, mnemonic });
 
-      addLog('Ephemeral TON keypair generated (browser-native)', 'success');
-      addLog(`Address: ${address.slice(0, 12)}…${address.slice(-8)}`, 'info');
+      safeAddLog('Ephemeral TON keypair generated (browser-native)', 'success');
+      safeAddLog(`Address: ${address.slice(0, 12)}…${address.slice(-8)}`, 'info');
 
+      if (isCancelled) return;
       setState('ROUTE_STREAM');
 
       await simulateOmnistonStream(
@@ -320,16 +329,22 @@ export function useDeltaEngine(
         isAffiliate,
         sourceNetwork,
         address,
-        addLog,
-        m => setMetrics(m),
+        safeAddLog,
+        m => { if (!isCancelled) setMetrics(m); },
         isSimulation
       );
     };
 
     init().catch(err => {
-      setError(err.message ?? 'Initialisation failed');
-      setState('ROUTE_STREAM');
+      if (!isCancelled) {
+        setError(err.message ?? 'Initialisation failed');
+        setState('ROUTE_STREAM');
+      }
     });
+
+    return () => {
+      isCancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInvoice, isSimulation, sourceNetwork]);
 
