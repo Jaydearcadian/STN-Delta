@@ -75,57 +75,76 @@ const simulateOmnistonStream = async (
 ): Promise<void> => {
   addLog('Initializing Omniston Sandbox Client...', 'info');
   
-  // 1. Initialize the live Sandbox Client
-  const omniston = new Omniston({ apiUrl: 'wss://omni-ws.ston.fi' });
-  
-  addLog('Connected to wss://omni-ws.ston.fi (MAINNET)', 'success');
-  await new Promise(r => setTimeout(r, 600));
-
   let realQuoteId = '';
+  let realQuote: any = null;
+  let fetchError: any = null;
+
   try {
-    addLog('Requesting LIVE cross-chain RFQ from Mainnet Resolvers...', 'info');
-    // Map the selected UI network to its actual Mainnet EVM contract address
-    let actualSourceAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Default Base USDC
+    const omniston = new Omniston({ apiUrl: 'wss://omni-ws.ston.fi' });
+
+    let actualSourceAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base USDC
     if (sourceNetwork.includes('Polygon')) {
-      actualSourceAddress = '0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb'; // Polygon pUSD
+      actualSourceAddress = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359'; // Polygon USDC (proper mainnet address)
     } else if (sourceNetwork.includes('Ethereum')) {
       actualSourceAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // Ethereum USDT
     } else if (sourceNetwork.includes('BNB')) {
       actualSourceAddress = '0x55d398326f99059fF775485246999027B3197955'; // BNB USDT
     }
 
-    // Request the real quote observable using exact v1beta8 schema
-    const quoteObservable = omniston.requestForQuote({
-      inputAsset: { chain: { $case: 'base', value: { kind: { $case: 'erc20', value: actualSourceAddress } } } },
-      outputAsset: { chain: { $case: 'ton', value: { kind: { $case: 'jetton', value: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' } } } },
-      amount: { $case: 'inputUnits', value: (invoiceAmount * 1e6).toFixed(0) },
-      settlementParams: [{ params: { $case: 'order', value: {} } }]
-    } as any);
-
-    // Extract the first quote ID
-    const realQuote = await new Promise<any>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Timeout waiting for STON.fi quotes after 8s')), 8000);
-      quoteObservable.subscribe({
-        next: (event: any) => {
-          if (event && event.$case === 'quoteUpdated' && event.value) {
-            clearTimeout(timeout);
-            resolve(event.value);
-          }
-        },
-        error: (err: any) => {
-          console.error("Quote Observable Error:", err);
-          clearTimeout(timeout);
-          reject(err);
+    // Implement Retry Logic (Max 3 attempts, 18s timeout)
+    const maxAttempts = isSimulation ? 1 : 3;
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        if (!isSimulation) {
+          addLog(`Fetching live quote from wss://omni-ws.ston.fi (Attempt ${attempt}/${maxAttempts})...`, 'info');
         }
-      });
-    });
 
-    realQuoteId = realQuote.quoteId;
-    addLog(`Live Mainnet Quote Captured: ${realQuoteId}`, 'success');
+        const quoteObservable = omniston.requestForQuote({
+          inputAsset: { chain: { $case: 'base', value: { kind: { $case: 'erc20', value: actualSourceAddress } } } },
+          outputAsset: { chain: { $case: 'ton', value: { kind: { $case: 'jetton', value: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs' } } } },
+          amount: { $case: 'inputUnits', value: (invoiceAmount * 1e6).toFixed(0) },
+          settlementParams: [{ params: { $case: 'order', value: {} } }]
+        } as any);
+
+        realQuote = await new Promise<any>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout waiting for STON.fi quotes after 18s')), 18000);
+          const sub = quoteObservable.subscribe({
+            next: (event: any) => {
+              if (event && event.$case === 'quoteUpdated' && event.value) {
+                clearTimeout(timeout);
+                try { sub.unsubscribe(); } catch(e){}
+                resolve(event.value);
+              }
+            },
+            error: (err: any) => {
+              console.error("Quote Observable Error:", err);
+              clearTimeout(timeout);
+              reject(err);
+            }
+          });
+        });
+
+        realQuoteId = realQuote.quoteId;
+        addLog(`Live Mainnet Quote Captured: ${realQuoteId}`, 'success');
+        fetchError = null;
+        break; // Success! Exit the retry loop
+        
+      } catch (err: any) {
+        fetchError = err;
+        if (!isSimulation && attempt < maxAttempts) {
+          addLog(`Attempt ${attempt} failed: ${err.message}. Retrying in 2s...`, 'warn');
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+    }
+
+    if (fetchError) throw fetchError;
+
   } catch (err: any) {
     if (!isSimulation) {
       const errDetails = err.details || JSON.stringify(err);
-      addLog(`Mainnet quote fetch failed: ${err.message}. Details: ${errDetails}`, 'warn');
+      addLog(`Mainnet quote fetch ultimately failed: ${err.message}. Details: ${errDetails}`, 'warn');
       throw new Error(`Live execution failed: ${err.message}. Details: ${errDetails}`);
     }
     console.error("Mainnet Quote Fetch Failed:", err);
