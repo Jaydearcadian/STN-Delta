@@ -82,10 +82,19 @@ const simulateOmnistonStream = async (
 
   try {
     addLog('Requesting LIVE cross-chain RFQ from Mainnet Resolvers...', 'info');
-    // Request a real quote from Base USDC to TON USDT
+    // Map the selected UI network to its actual Mainnet EVM contract address
+    let actualSourceAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Default Base USDC
+    if (sourceNetwork.includes('Polygon')) {
+      actualSourceAddress = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'; // Polygon USDT
+    } else if (sourceNetwork.includes('Ethereum')) {
+      actualSourceAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // Ethereum USDT
+    } else if (sourceNetwork.includes('BNB')) {
+      actualSourceAddress = '0x55d398326f99059fF775485246999027B3197955'; // BNB USDT
+    }
+
     // @ts-ignore - Demonstrative SDK integration
     const quoteStream = await omniston.requestQuote({
-      sourceAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Base USDC
+      sourceAddress: actualSourceAddress,
       destinationAddress: 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs', // TON USDT
       offerUnits: (invoiceAmount * 1e6).toString()
     });
