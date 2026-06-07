@@ -85,7 +85,7 @@ const simulateOmnistonStream = async (
     // Map the selected UI network to its actual Mainnet EVM contract address
     let actualSourceAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Default Base USDC
     if (sourceNetwork.includes('Polygon')) {
-      actualSourceAddress = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'; // Polygon USDT
+      actualSourceAddress = '0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb'; // Polygon pUSD
     } else if (sourceNetwork.includes('Ethereum')) {
       actualSourceAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // Ethereum USDT
     } else if (sourceNetwork.includes('BNB')) {
