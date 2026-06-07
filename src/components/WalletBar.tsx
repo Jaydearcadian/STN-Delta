@@ -4,6 +4,7 @@
 import { useTonConnectUI, useTonWallet } from '@tonconnect/ui-react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAccount, useDisconnect } from 'wagmi';
+import { Address } from '@ton/core';
 import { isTestnet } from '../config/networks';
 
 const truncate = (addr: string, head = 6, tail = 4) =>
@@ -17,7 +18,8 @@ export const TonWalletButton = () => {
 
   if (wallet) {
     const addr = wallet.account.address;
-    const display = addr ? truncate(addr, 4, 4) : 'TON';
+    const displayAddress = addr ? Address.parse(addr).toString({ bounceable: false }) : '';
+    const display = displayAddress ? truncate(displayAddress, 4, 4) : 'TON';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <button
