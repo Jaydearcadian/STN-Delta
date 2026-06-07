@@ -8,7 +8,8 @@ import '@rainbow-me/rainbowkit/styles.css'
 import './index.css'
 import App from './App.tsx'
 import { wagmiConfig } from './config/wagmi'
-import { TONCONNECT_MANIFEST_URL } from './config/networks'
+import { TONCONNECT_MANIFEST_URL, activeOmni } from './config/networks'
+import { OmnistonProvider } from '@ston-fi/omniston-sdk-react'
 
 const queryClient = new QueryClient()
 
@@ -23,7 +24,9 @@ createRoot(document.getElementById('root')!).render(
           fontStack: 'system',
         })}>
           <TonConnectUIProvider manifestUrl={TONCONNECT_MANIFEST_URL}>
-            <App />
+            <OmnistonProvider apiUrl={activeOmni.wsUrl}>
+              <App />
+            </OmnistonProvider>
           </TonConnectUIProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
