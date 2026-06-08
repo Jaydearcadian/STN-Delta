@@ -435,7 +435,7 @@ export function useDeltaEngine(
           return bytes;
         };
 
-        await omniston.registerSignedOrder({
+        await omniston.orderRegisterSignedOrder({
            quoteId: metrics.quoteId,
            ownerSrcAddress: { chain: { $case: 'base', value: connectedEvmAddress || '' } },
            signedOrder: {
