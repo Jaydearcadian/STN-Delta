@@ -400,12 +400,15 @@ export function useDeltaEngine(
         const omniston = new Omniston({ apiUrl: 'wss://omni-ws.ston.fi' });
         
         let signature: string;
+        let payloadRes: any;
         try {
           // This attempts the real SDK EVM execution path.
-          const payloadRes = await omniston.evmBuildOrderPayload({
+          payloadRes = await omniston.evmBuildOrderPayload({
              quoteId: metrics.quoteId,
              ownerSrcAddress: { chain: { $case: 'base', value: connectedEvmAddress || '' } },
-             traderDstAddress: { chain: { $case: 'ton', value: tonIdentity?.address || '' } }
+             traderDstAddress: { chain: { $case: 'ton', value: tonIdentity?.address || '' } },
+             htlcSecrets: { secretMode: { $case: 'generated', value: { maxExecutions: 1 } } },
+             htlcClaimerDstAddress: { chain: { $case: 'ton', value: tonIdentity?.address || '' } }
           } as any);
 
           addLog('Please sign the TypedData in MetaMask...', 'info');
@@ -424,10 +427,28 @@ export function useDeltaEngine(
         }
 
         addLog('Registering Signed Order with Omniston...', 'info');
+        
+        const hexToBytes = (hex: string) => {
+          const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
+          const bytes = new Uint8Array(cleanHex.length / 2);
+          for (let i = 0; i < cleanHex.length; i += 2) bytes[i / 2] = parseInt(cleanHex.substring(i, i + 2), 16);
+          return bytes;
+        };
+
         await omniston.registerSignedOrder({
            quoteId: metrics.quoteId,
            ownerSrcAddress: { chain: { $case: 'base', value: connectedEvmAddress || '' } },
-           signedOrder: { value: signature } 
+           signedOrder: {
+             order: {
+               $case: 'evmV1',
+               value: {
+                 signature: hexToBytes(signature),
+                 orderExtension: payloadRes.orderExtension,
+                 encodedOrder: new Uint8Array() // Placeholder if not provided by SDK
+               }
+             }
+           },
+           serializedOrderDetails: payloadRes.serializedOrderDetails
         } as any);
         addLog('Order successfully registered with STON.fi resolvers!', 'success');
       }
